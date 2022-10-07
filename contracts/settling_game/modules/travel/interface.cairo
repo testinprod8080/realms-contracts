@@ -13,4 +13,13 @@ namespace ITravel {
         destination_nested_id: felt,
     ) {
     }
+
+    func assert_traveller_is_at_coordinates(
+        traveller_contract_id: felt,
+        traveller_token_id: Uint256,
+        traveller_nested_id: felt,
+        x: felt,
+        y: felt,
+    ) {
+    }
 }

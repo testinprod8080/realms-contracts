@@ -43,6 +43,25 @@ func TravelAction(
 ) {
 }
 
+// @notice Event fires on every movement of an Asset/Army
+// @param traveller_nested_id: This exists for nested units within the token. Eg: An Army.
+//        If the asset has no nested ID, then this will be 0.
+// @param traveller_contract_id: Traveller contract ID of asset
+// @param traveller_token_id: Traveller token_id (Actual NFT ID)
+// @param x: x-coordinate
+// @param y: y-coordinate
+// @param arrival_time: Arrival time in unix
+@event
+func TravelToCoordinatesAction(
+    traveller_contract_id: felt,
+    traveller_token_id: Uint256,
+    traveller_nested_id: felt,
+    x: felt,
+    y: felt,
+    arrival_time: felt,
+) {
+}
+
 // -----------------------------------
 // Storage
 // -----------------------------------
@@ -159,7 +178,7 @@ func travel{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         traveller_contract_id,
         traveller_token_id,
         traveller_nested_id,
-        TravelInformation(destination_contract_id, destination_token_id, destination_nested_id, time),
+        TravelInformation(destination_contract_id, destination_token_id, destination_nested_id, time, 0, 0),
     );
 
     // emit event
@@ -170,6 +189,79 @@ func travel{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
         destination_contract_id,
         destination_token_id,
         destination_nested_id,
+        time,
+    );
+
+    return ();
+}
+
+// @traveller_contract_id: External contract ID -> keeping the same for consistency
+// @traveller_token_id: Asset token ID moving (Realm, Adventurer)
+// @traveller_nested_id: Nested asset ID (Armies, persons etc)
+// @x: x-coordinate
+// @y: y-coordinate
+@external
+func travel_to_coordinates{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    traveller_contract_id: felt,
+    traveller_token_id: Uint256,
+    traveller_nested_id: felt,
+    x: felt,
+    y: felt,
+) {
+    alloc_locals;
+
+    // TODO: assert is correct ID (can't try move unmoveable assets)
+
+    // You cannot move nested asset ID 0 - this is the actual location.
+    let is_not_defending_army = is_nn(traveller_nested_id);
+    with_attr error_message("Combat: You cannot move your Defending Army") {
+        assert is_not_defending_army = TRUE;
+    }
+
+    Module.ERC721_owner_check(traveller_token_id, traveller_contract_id);
+
+    // check has arrived
+    assert_arrived(traveller_contract_id, traveller_token_id, traveller_nested_id);
+
+    // get travel coordinates
+    let (traveller_coordinates: Point) = get_coordinates(
+        traveller_contract_id, traveller_token_id, traveller_nested_id
+    );
+
+    // if no current location set, use the home coordinates
+    if (traveller_coordinates.x == 0) {
+        let (traveller_coordinates: Point) = get_coordinates(
+            traveller_contract_id, traveller_token_id, 0
+        );
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+    } else {
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+    }
+
+    tempvar traveller_coordinates = traveller_coordinates;
+
+    // calculate time
+    let (time) = get_travel_time(traveller_coordinates, Point(x=x, y=y));
+
+    // set travel_information
+    travel_information.write(
+        traveller_contract_id,
+        traveller_token_id,
+        traveller_nested_id,
+        TravelInformation(0, Uint256(0, 0), 0, time, x, y),
+    );
+
+    // emit event
+    TravelToCoordinatesAction.emit(
+        traveller_contract_id,
+        traveller_token_id,
+        traveller_nested_id,
+        x,
+        y,
         time,
     );
 
@@ -273,6 +365,35 @@ func assert_traveller_is_at_location{
 
     // assert travellers destination and requested information is the same
     Travel.assert_same_points(traveller_destination, destination);
+
+    return ();
+}
+
+@view
+func assert_traveller_is_at_coordinates{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
+}(
+    traveller_contract_id: felt,
+    traveller_token_id: Uint256,
+    traveller_nested_id: felt,
+    x: felt,
+    y: felt,
+) {
+    alloc_locals;
+
+    // check traveller has arrived
+    assert_arrived(traveller_contract_id, traveller_token_id, traveller_nested_id);
+
+    // get traveller information
+    let (traveller_information: TravelInformation) = get_travel_information(
+        traveller_contract_id, traveller_token_id, traveller_nested_id
+    );
+    
+    // assert travellers destination and requested information is the same
+    Travel.assert_same_points(
+        Point(x=traveller_information.x,y=traveller_information.y), 
+        Point(x=x, y=y),
+    );
 
     return ();
 }

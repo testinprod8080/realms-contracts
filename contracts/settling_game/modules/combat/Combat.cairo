@@ -37,6 +37,7 @@ from contracts.settling_game.interfaces.imodules import IModuleController
 from contracts.settling_game.utils.general import transform_costs_to_tokens
 
 from contracts.settling_game.modules.goblintown.interface import IGoblinTown
+from contracts.settling_game.modules.mobs.interface import IMob
 from contracts.settling_game.modules.food.interface import IFood
 from contracts.settling_game.modules.relics.interface import IRelics
 from contracts.settling_game.modules.travel.interface import ITravel
@@ -89,6 +90,27 @@ func CombatEnd_4(
     defending_army_id: felt,
     defending_realm_id: Uint256,
     defending_army: Army,
+) {
+}
+
+@event
+func CombatMobStart(
+    attacking_army_id: felt,
+    attacking_realm_id: Uint256,
+    attacking_army: Army,
+    mob_id: felt,
+    mob_army: Army,
+) {
+}
+
+@event
+func CombatMobEnd(
+    combat_outcome: felt,
+    attacking_army_id: felt,
+    attacking_realm_id: Uint256,
+    attacking_army: Army,
+    mob_id: felt,
+    mob_army: Army,
 ) {
 }
 
@@ -389,6 +411,131 @@ func initiate_combat{
         ending_attacking_army,
         defending_army_id,
         defending_realm_id,
+        ending_defending_army,
+    );
+
+    return (combat_outcome,);
+}
+
+// @notice Attack a spawned mob
+// @param attacking_realm_id: Staked Realm id (S_Realm)
+// @param mob_id: mob id in Mobs module
+// @return: combat_outcome: Which side won - either the attacker (COMBAT_OUTCOME_ATTACKER_WINS)
+//                          or the defender (COMBAT_OUTCOME_DEFENDER_WINS)
+@external
+func attack_mob{
+    range_check_ptr, syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*
+}(
+    attacking_army_id: felt,
+    attacking_realm_id: Uint256,
+    mob_id: felt,
+) -> (combat_outcome: felt) {
+    alloc_locals;
+
+    let (mob_module) = Module.get_module_address(ModuleIds.Mobs);
+
+    with_attr error_message("Combat: Cannot initiate combat against mob") {
+        Module.ERC721_owner_check(attacking_realm_id, ExternalContractIds.S_Realms);
+        let (can_attack) = IMob.mob_can_be_attacked(
+            mob_module, mob_id
+        );
+        assert can_attack = TRUE;
+    }
+
+    // get mob coordinates
+    let (mob_coordinates) = IMob.get_mob_coordinates(mob_module, mob_id);
+
+    // Check Army is at mob coordinates
+    let (travel_module) = Module.get_module_address(ModuleIds.Travel);
+    ITravel.assert_traveller_is_at_coordinates(
+        travel_module,
+        ExternalContractIds.S_Realms,
+        attacking_realm_id,
+        attacking_army_id,
+        mob_coordinates.x,
+        mob_coordinates.y,
+    );
+
+    // fetch combat data
+    let (attacking_realm_data: ArmyData) = get_realm_army_combat_data(
+        attacking_army_id, attacking_realm_id
+    );
+    let (mob_army_data: ArmyData) = IMob.get_mob_army_combat_data(mob_module, mob_id);
+
+    // unpack armies
+    let (starting_attack_army: Army) = Combat.unpack_army(attacking_realm_data.ArmyPacked);
+    let (starting_defend_army: Army) = Combat.unpack_army(mob_army_data.ArmyPacked);
+
+    // emit starting
+    CombatMobStart.emit(
+        attacking_army_id,
+        attacking_realm_id,
+        starting_attack_army,
+        mob_id,
+        starting_defend_army,
+    );
+
+    // luck role and then outcome
+    let (luck) = roll_dice();
+    let (
+        combat_outcome, ending_attacking_army_packed, ending_defending_army_packed
+    ) = Combat.calculate_winner(
+        luck, attacking_realm_data.ArmyPacked, mob_army_data.ArmyPacked
+    );
+
+    // unpack
+    let (ending_attacking_army: Army) = Combat.unpack_army(ending_attacking_army_packed);
+    let (ending_defending_army: Army) = Combat.unpack_army(ending_defending_army_packed);
+
+    // TODO check if mob has zero health to trigger rewards, etc
+    let (now) = get_block_timestamp();
+    if (combat_outcome == COMBAT_OUTCOME_ATTACKER_WINS) {
+        // let (controller) = Module.controller_address();
+        // let (resources_logic_address) = IModuleController.get_module_address(
+        //     controller, ModuleIds.Resources
+        // );
+        // let (relic_address) = IModuleController.get_module_address(
+        //     controller, ModuleIds.L09_Relics
+        // );
+        // let (caller) = get_caller_address();
+        // IResources.pillage_resources(resources_logic_address, defending_realm_id, caller);
+        // IRelics.set_relic_holder(relic_address, attacking_realm_id, defending_realm_id);
+
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+
+        tempvar attacking_xp = ATTACKING_ARMY_XP;
+    } else {
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+
+        tempvar attacking_xp = DEFENDING_ARMY_XP;
+    }
+
+    tempvar attacking_xp = attacking_xp;
+
+    // store new values with added XP
+    set_army_data_and_emit(
+        attacking_army_id,
+        attacking_realm_id,
+        ArmyData(ending_attacking_army_packed, now, attacking_realm_data.XP + attacking_xp, attacking_realm_data.Level, attacking_realm_data.CallSign),
+    );
+
+    IMob.set_mob_army_data_and_emit(
+        mob_module,
+        mob_id,
+        ArmyData(ending_defending_army_packed, now, mob_army_data.XP, mob_army_data.Level, mob_army_data.CallSign),
+    );
+
+    // emit end
+    CombatMobEnd.emit(
+        combat_outcome,
+        attacking_army_id,
+        attacking_realm_id,
+        ending_attacking_army,
+        mob_id,
         ending_defending_army,
     );
 
