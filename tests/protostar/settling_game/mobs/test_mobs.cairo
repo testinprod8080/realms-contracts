@@ -69,6 +69,24 @@ func test_fail_spawn_mob_if_not_enough_resources{
 }
 
 @external
+func test_fail_spawn_mob_without_spawn_conditions{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}() {
+    alloc_locals;
+
+    // arrange
+    let x = 100;
+    let y = 100;
+    let mob_id = 1;
+
+    // act
+    %{ expect_revert(error_message="Mobs: no spawn condition found") %}
+    spawn_mob(mob_id, x, y);
+
+    return ();    
+}
+
+@external
 func test_fail_spawn_mob_if_exists{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }() {
@@ -78,6 +96,10 @@ func test_fail_spawn_mob_if_exists{
     let x = 100;
     let y = 100;
     let mob_id = 1;
+    let resource_id = 1;
+    let resource_quantity = 100;
+    set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
     spawn_mob(mob_id, x, y);
 
     // act
@@ -180,6 +202,10 @@ func test_mob_can_be_attacked{
     let x = 100;
     let y = 100;
     let mob_id = 1;
+    let resource_id = 1;
+    let resource_quantity = 100;
+    set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
     spawn_mob(mob_id, x, y);
 
     // act

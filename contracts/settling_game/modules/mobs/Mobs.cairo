@@ -106,6 +106,10 @@ func spawn_mob{
 
     let (spawn_conditions) = mob_spawn_conditions.read(mob_id);
 
+    with_attr error_message("Mobs: no spawn condition found") {
+        assert_not_zero(spawn_conditions.resource_id);
+    }
+
     with_attr error_message("Mobs: spawn conditions not met") {
         let has_required_resources = is_not_zero(spawn_conditions.resource_id);
         if (has_required_resources == TRUE) {
