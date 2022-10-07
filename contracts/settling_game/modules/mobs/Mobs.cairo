@@ -14,7 +14,11 @@ from starkware.cairo.common.uint256 import Uint256
 from starkware.starknet.common.syscalls import get_block_timestamp
 from starkware.cairo.common.math import (
     assert_not_zero,
+    assert_le,
 )
+from starkware.cairo.common.math_cmp import is_not_zero
+
+from openzeppelin.upgrades.library import Proxy
 
 from contracts.settling_game.library.library_module import Module
 from contracts.settling_game.interfaces.imodules import IModuleController
@@ -24,9 +28,13 @@ from contracts.settling_game.utils.game_structs import (
     Battalion,
     ArmyData,
 )
+
 from contracts.settling_game.modules.combat.library import Combat
 from contracts.settling_game.modules.combat.constants import (
     BattalionIds,
+)
+from contracts.settling_game.modules.mobs.game_structs import (
+    SpawnConditions,
 )
 
 // -----------------------------------
@@ -41,6 +49,10 @@ func MobSpawn(mob_id: felt, x: felt, y: felt, time_stamp: felt) {
 func MobArmyMetadata(mob_id: felt, army_data: ArmyData) {
 }
 
+@event
+func MobSpawnOffering(mob_id: felt, resource_id: felt, resource_quantity: felt) {
+}
+
 // -----------------------------------
 // Storage
 // -----------------------------------x
@@ -53,12 +65,37 @@ func mob_data_by_id(mob_id: felt) -> (army_data: ArmyData) {
 func mob_coordinates(mob_id: felt) -> (point: Point) {
 }
 
+@storage_var
+func mob_spawn_conditions(mob_id: felt) -> (conditions: SpawnConditions) {
+}
+
+@storage_var
+func mob_sacrifice(mob_id: felt, resource_id: felt) -> (resource_quantity: felt) {
+}
+
+
 // -----------------------------------
 // EXTERNAL
 // -----------------------------------
 
+// @notice deposit resources towards mob spawn requirements
+@external
+func sacrifice_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    mob_id: felt, resource_id: felt, resource_quantity: felt
+) {
+    alloc_locals;
+
+    // TODO check requirements for mob for this resource so that
+    // we can revert if they are depositing too much
+
+    mob_sacrifice.write(mob_id, resource_id, resource_quantity);
+
+    MobSpawnOffering.emit(mob_id, resource_id, resource_quantity);
+
+    return ();
+}
+
 // @notice spawns mob at supplied coordinates
-// @dev only callable by whitelisted
 @external
 func spawn_mob{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
@@ -67,13 +104,33 @@ func spawn_mob{
 ) {
     alloc_locals;
 
-    // TODO: whitelisted only
+    let (spawn_conditions) = mob_spawn_conditions.read(mob_id);
+
+    with_attr error_message("Mobs: spawn conditions not met") {
+        let has_required_resources = is_not_zero(spawn_conditions.resource_id);
+        if (has_required_resources == TRUE) {
+            let (sacrificed_resources) = mob_sacrifice.read(
+                mob_id, spawn_conditions.resource_id
+            );
+            assert_le(spawn_conditions.resource_quantity, sacrificed_resources);
+
+            tempvar range_check_ptr = range_check_ptr;
+            tempvar syscall_ptr = syscall_ptr;
+            tempvar pedersen_ptr = pedersen_ptr;
+        } else {
+            tempvar range_check_ptr = range_check_ptr;
+            tempvar syscall_ptr = syscall_ptr;
+            tempvar pedersen_ptr = pedersen_ptr;
+        }
+    }
 
     // check spawn conditions
     with_attr error_message("Mobs: only one mob alive at a time") {
         let (army_data) = mob_data_by_id.read(mob_id);
         assert army_data.ArmyPacked = 0;
     }
+
+    // TODO do something with sacrificed resources (split to treasury/module fee/burn/etc)
 
     // store spawn coordinates
     mob_coordinates.write(mob_id, Point(x=x, y=y));
@@ -118,6 +175,14 @@ func set_mob_army_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
 // -----------------------------------
 // GETTERS
 // -----------------------------------
+
+@view
+func get_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    mob_id: felt
+) -> (conditions: SpawnConditions) {
+    let (conditions) = mob_spawn_conditions.read(mob_id);
+    return (conditions=conditions);
+}
 
 @view
 func get_mob_coordinates{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
@@ -182,4 +247,17 @@ func get_mob_army_combat_data{
 ) -> (mob_army_data: ArmyData) {
     let (army_data) = mob_data_by_id.read(mob_id);
     return (mob_army_data=army_data);
+}
+
+// -----------------------------------
+// Admin
+// -----------------------------------
+
+@external
+func set_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    mob_id: felt, conditions: SpawnConditions
+) {
+    Proxy.assert_only_admin();
+    mob_spawn_conditions.write(mob_id, conditions);
+    return ();
 }
