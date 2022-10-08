@@ -267,11 +267,10 @@ namespace TroopId {
     const Mage = 11;
     const Arcanist = 12;
     const Goblin = 13;
-    const ZombieKing = 14;
     // IMPORTANT: if you're adding to this enum
     // make sure the SIZE is one greater than the
     // maximal value; certain algorithms depend on that
-    const SIZE = 15;
+    const SIZE = 14;
 }
 
 namespace TroopType {
@@ -308,7 +307,6 @@ namespace TroopProps {
         const Mage = TroopType.RangedMagic;
         const Arcanist = TroopType.RangedMagic;
         const Goblin = TroopType.Melee;
-        const ZombieKing = TroopType.Melee;
     }
 
     namespace Tier {
@@ -325,7 +323,6 @@ namespace TroopProps {
         const Mage = 2;
         const Arcanist = 3;
         const Goblin = 1;
-        const ZombieKing = 3;
     }
 
     namespace Building {
@@ -342,7 +339,6 @@ namespace TroopProps {
         const Mage = RealmBuildingsIds.MageTower;
         const Arcanist = RealmBuildingsIds.MageTower;
         const Goblin = 0;
-        const ZombieKing = 0;
     }
 
     namespace Agility {
@@ -359,7 +355,6 @@ namespace TroopProps {
         const Mage = 8;
         const Arcanist = 10;
         const Goblin = 3;
-        const ZombieKing = 2;
     }
 
     namespace Attack {
@@ -376,7 +371,6 @@ namespace TroopProps {
         const Mage = 8;
         const Arcanist = 10;
         const Goblin = 8;
-        const ZombieKing = 100;
     }
 
     namespace Armor {
@@ -393,7 +387,6 @@ namespace TroopProps {
         const Mage = 3;
         const Arcanist = 4;
         const Goblin = 2;
-        const ZombieKing = 0;
     }
 
     namespace Vitality {
@@ -410,7 +403,6 @@ namespace TroopProps {
         const Mage = 50;
         const Arcanist = 80;
         const Goblin = 20;
-        const ZombieKing = 10000;
     }
 
     namespace Wisdom {
@@ -427,7 +419,6 @@ namespace TroopProps {
         const Mage = 8;
         const Arcanist = 10;
         const Goblin = 1;
-        const ZombieKing = 1;
     }
 }
 

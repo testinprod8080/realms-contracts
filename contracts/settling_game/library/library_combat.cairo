@@ -237,7 +237,6 @@ namespace Combat {
         dw TroopProps.Type.Mage;
         dw TroopProps.Type.Arcanist;
         dw TroopProps.Type.Goblin;
-        dw TroopProps.Type.ZombieKing;
 
         troop_tier_per_id:
         dw TroopProps.Tier.Skirmisher;
@@ -253,7 +252,6 @@ namespace Combat {
         dw TroopProps.Tier.Mage;
         dw TroopProps.Tier.Arcanist;
         dw TroopProps.Tier.Goblin;
-        dw TroopProps.Tier.ZombieKing;
 
         troop_building_per_id:
         dw TroopProps.Building.Skirmisher;
@@ -269,7 +267,6 @@ namespace Combat {
         dw TroopProps.Building.Mage;
         dw TroopProps.Building.Arcanist;
         dw TroopProps.Building.Goblin;
-        dw TroopProps.Building.ZombieKing;
 
         troop_agility_per_id:
         dw TroopProps.Agility.Skirmisher;
@@ -285,7 +282,6 @@ namespace Combat {
         dw TroopProps.Agility.Mage;
         dw TroopProps.Agility.Arcanist;
         dw TroopProps.Agility.Goblin;
-        dw TroopProps.Agility.ZombieKing;
 
         troop_attack_per_id:
         dw TroopProps.Attack.Skirmisher;
@@ -301,7 +297,6 @@ namespace Combat {
         dw TroopProps.Attack.Mage;
         dw TroopProps.Attack.Arcanist;
         dw TroopProps.Attack.Goblin;
-        dw TroopProps.Attack.ZombieKing;
 
         troop_armor_per_id:
         dw TroopProps.Armor.Skirmisher;
@@ -317,7 +312,6 @@ namespace Combat {
         dw TroopProps.Armor.Mage;
         dw TroopProps.Armor.Arcanist;
         dw TroopProps.Armor.Goblin;
-        dw TroopProps.Armor.ZombieKing;
 
         troop_vitality_per_id:
         dw TroopProps.Vitality.Skirmisher;
@@ -333,7 +327,6 @@ namespace Combat {
         dw TroopProps.Vitality.Mage;
         dw TroopProps.Vitality.Arcanist;
         dw TroopProps.Vitality.Goblin;
-        dw TroopProps.Vitality.ZombieKing;
 
         troop_wisdom_per_id:
         dw TroopProps.Wisdom.Skirmisher;
@@ -349,7 +342,6 @@ namespace Combat {
         dw TroopProps.Wisdom.Mage;
         dw TroopProps.Wisdom.Arcanist;
         dw TroopProps.Wisdom.Goblin;
-        dw TroopProps.Wisdom.ZombieKing;
     }
 
     // @notice Create a full Troop struct based on Troop ID
@@ -771,14 +763,5 @@ namespace Combat {
         let (goblin: Troop) = get_troop_internal(TroopId.Goblin);
         let (updated: Squad) = add_troop_to_squad(goblin, s);
         return build_goblin_squad_loop(idx + 1, count, updated);
-    }
-
-    func build_boss_squad{range_check_ptr}(boss_id: felt) -> (s: Squad) {
-        alloc_locals;
-
-        let (squad: Squad) = unpack_squad(0);
-        let (zombie_king: Troop) = get_troop_internal(TroopId.ZombieKing);
-        let (updated: Squad) = add_troop_to_squad(zombie_king, squad);
-        return (s=updated);
     }
 }
