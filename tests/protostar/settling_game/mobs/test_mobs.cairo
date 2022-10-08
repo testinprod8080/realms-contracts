@@ -20,6 +20,7 @@ from contracts.settling_game.modules.mobs.Mobs import (
     get_spawn_conditions,
     get_mob_sacrifice,
     mob_can_be_attacked,
+    get_mob_attack_data,
 )
 from contracts.settling_game.modules.mobs.game_structs import (
     SpawnConditions,
@@ -202,13 +203,22 @@ func test_set_mob_army_data{
     // arrange
     let mob_id = 1;
     let army_data = ArmyData(1, 0, 0, 0, 0);
+    let caller = MOCK_CONTRACT_ADDRESS;
+    let damage_inflicted  = 10;
+    let timestamp = 1;
 
     // act
-    set_mob_army_data_and_emit(mob_id, army_data);
+    set_mob_army_data_and_emit(
+        mob_id, army_data, caller, damage_inflicted, timestamp
+    );
 
     // assert
     let (result_army_data) = get_mob_army_combat_data(mob_id);
     assert result_army_data.ArmyPacked = 1;
+
+    let (attack_data) = get_mob_attack_data(mob_id, caller);
+    assert attack_data.total_damage_inflicted = damage_inflicted;
+    assert attack_data.last_attack_timestamp = timestamp;
 
     return ();
 }

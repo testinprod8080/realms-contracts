@@ -20,6 +20,12 @@ namespace IMob {
     func get_mob_army_combat_data(mob_id: felt) -> (mob_army_data: ArmyData) {
     }
 
-    func set_mob_army_data_and_emit(mob_id: felt, army_data: ArmyData) {
+    func set_mob_army_data_and_emit(
+        mob_id: felt, 
+        army_data: ArmyData, 
+        caller: felt, 
+        damage_inflicted: felt, 
+        timestamp: felt,
+    ) {
     }
 }

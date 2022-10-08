@@ -31,8 +31,9 @@ from openzeppelin.token.erc721.IERC721 import IERC721
 from contracts.settling_game.interfaces.IERC1155 import IERC1155
 
 from contracts.settling_game.library.library_module import Module
-from contracts.settling_game.modules.combat.library import Combat
 from contracts.settling_game.interfaces.imodules import IModuleController
+from contracts.settling_game.modules.combat.library import Combat
+from contracts.settling_game.modules.mobs.library import Mobs
 
 from contracts.settling_game.utils.general import transform_costs_to_tokens
 
@@ -457,7 +458,7 @@ func attack_mob{
     );
 
     // TODO: integrate food penalty?
-    
+
     // fetch combat data
     let (attacking_realm_data: ArmyData) = get_realm_army_combat_data(
         attacking_army_id, attacking_realm_id
@@ -466,7 +467,7 @@ func attack_mob{
 
     // unpack armies
     let (starting_attack_army: Army) = Combat.unpack_army(attacking_realm_data.ArmyPacked);
-    let (starting_defend_army: Army) = Combat.unpack_army(mob_army_data.ArmyPacked);
+    let (starting_mob_army: Army) = Combat.unpack_army(mob_army_data.ArmyPacked);
 
     // emit starting
     CombatMobStart.emit(
@@ -474,35 +475,40 @@ func attack_mob{
         attacking_realm_id,
         starting_attack_army,
         mob_id,
-        starting_defend_army,
+        starting_mob_army,
     );
+
+    // get mob starting health
+    let (starting_mob_health) = Mobs.get_health_from_unpacked_army(starting_mob_army);
 
     // luck role and then outcome
     let (luck) = roll_dice();
     let (
-        combat_outcome, ending_attacking_army_packed, ending_defending_army_packed
+        combat_outcome, ending_attacking_army_packed, ending_mob_army_packed
     ) = Combat.calculate_winner(
         luck, attacking_realm_data.ArmyPacked, mob_army_data.ArmyPacked
     );
 
     // unpack
     let (ending_attacking_army: Army) = Combat.unpack_army(ending_attacking_army_packed);
-    let (ending_defending_army: Army) = Combat.unpack_army(ending_defending_army_packed);
+    let (ending_mob_army: Army) = Combat.unpack_army(ending_mob_army_packed);
 
-    // TODO check if mob has zero health to trigger rewards, etc
+    // TODO if mob died, trigger rewards
+    // let (dead) = Mobs.check_mob_dead(ending_mob_army);
+    // if (dead == TRUE) {
+    //     tempvar syscall_ptr = syscall_ptr;
+    //     tempvar range_check_ptr = range_check_ptr;
+    //     tempvar pedersen_ptr = pedersen_ptr;
+    // } else {
+    //     tempvar syscall_ptr = syscall_ptr;
+    //     tempvar range_check_ptr = range_check_ptr;
+    //     tempvar pedersen_ptr = pedersen_ptr;
+    // }
+
     let (now) = get_block_timestamp();
-    if (combat_outcome == COMBAT_OUTCOME_ATTACKER_WINS) {
-        // let (controller) = Module.controller_address();
-        // let (resources_logic_address) = IModuleController.get_module_address(
-        //     controller, ModuleIds.Resources
-        // );
-        // let (relic_address) = IModuleController.get_module_address(
-        //     controller, ModuleIds.L09_Relics
-        // );
-        // let (caller) = get_caller_address();
-        // IResources.pillage_resources(resources_logic_address, defending_realm_id, caller);
-        // IRelics.set_relic_holder(relic_address, attacking_realm_id, defending_realm_id);
+    let (caller) = get_caller_address();
 
+    if (combat_outcome == COMBAT_OUTCOME_ATTACKER_WINS) {
         tempvar syscall_ptr = syscall_ptr;
         tempvar range_check_ptr = range_check_ptr;
         tempvar pedersen_ptr = pedersen_ptr;
@@ -518,6 +524,10 @@ func attack_mob{
 
     tempvar attacking_xp = attacking_xp;
 
+    // calculate damage inflicted
+    let (ending_mob_health) = Mobs.get_health_from_unpacked_army(starting_mob_army);
+    let damage_inflicted = starting_mob_health - ending_mob_health;
+
     // store new values with added XP
     set_army_data_and_emit(
         attacking_army_id,
@@ -528,7 +538,10 @@ func attack_mob{
     IMob.set_mob_army_data_and_emit(
         mob_module,
         mob_id,
-        ArmyData(ending_defending_army_packed, now, mob_army_data.XP, mob_army_data.Level, mob_army_data.CallSign),
+        ArmyData(ending_mob_army_packed, now, mob_army_data.XP, mob_army_data.Level, mob_army_data.CallSign),
+        caller,
+        damage_inflicted,
+        now,
     );
 
     // emit end
@@ -538,7 +551,7 @@ func attack_mob{
         attacking_realm_id,
         ending_attacking_army,
         mob_id,
-        ending_defending_army,
+        ending_mob_army,
     );
 
     return (combat_outcome,);

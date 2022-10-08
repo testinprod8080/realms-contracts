@@ -16,3 +16,8 @@ struct SpawnConditions {
     resource_quantity: Uint256,
     coordinates: Point,
 }
+
+struct AttackData {
+    total_damage_inflicted: felt,
+    last_attack_timestamp: felt,
+}

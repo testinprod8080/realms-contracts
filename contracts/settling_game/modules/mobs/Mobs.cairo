@@ -41,6 +41,7 @@ from contracts.settling_game.modules.combat.constants import (
 )
 from contracts.settling_game.modules.mobs.game_structs import (
     SpawnConditions,
+    AttackData,
 )
 from contracts.settling_game.modules.mobs.library import Mobs
 
@@ -68,12 +69,17 @@ func MobSpawnOffering(caller: felt, mob_id: felt, resource_id: Uint256, resource
 func mob_data_by_id(mob_id: felt) -> (army_data: ArmyData) {
 }
 
+
 @storage_var
 func mob_spawn_conditions(mob_id: felt) -> (conditions: SpawnConditions) {
 }
 
 @storage_var
 func mob_sacrifice(mob_id: felt, resource_id: Uint256) -> (resource_quantity: Uint256) {
+}
+
+@storage_var
+func mob_attack_data(mob_id: felt, caller: felt) -> (attack_data: AttackData) {
 }
 
 
@@ -170,8 +176,24 @@ func spawn_mob{
 
 @external
 func set_mob_army_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    mob_id: felt, army_data: ArmyData
+    mob_id: felt, 
+    army_data: ArmyData, 
+    caller: felt, 
+    damage_inflicted: felt, 
+    timestamp: felt,
 ) {
+    // TODO restrict caller
+    
+    let (attack_data) = mob_attack_data.read(mob_id, caller);
+    mob_attack_data.write(
+        mob_id, 
+        caller, 
+        AttackData(
+            attack_data.total_damage_inflicted + damage_inflicted, 
+            timestamp,
+        ),
+    );
+
     mob_data_by_id.write(mob_id, army_data);
 
     // emit data
@@ -193,7 +215,7 @@ func get_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
     mob_id: felt
 ) -> (conditions: SpawnConditions) {
     let (conditions) = mob_spawn_conditions.read(mob_id);
-    return (conditions=conditions);
+    return (conditions,);
 }
 
 @view
@@ -201,7 +223,7 @@ func get_mob_sacrifice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     mob_id: felt, resource_id: Uint256,
 ) -> (resource_quantity: Uint256) {
     let (resource_quantity) = mob_sacrifice.read(mob_id, resource_id);
-    return (resource_quantity=resource_quantity);
+    return (resource_quantity,);
 }
 
 @view
@@ -209,7 +231,7 @@ func get_mob_coordinates{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_c
     mob_id: felt
 ) -> (coordinates: Point) {
     let (conditions) = mob_spawn_conditions.read(mob_id);
-    return (coordinates=conditions.coordinates);
+    return (conditions.coordinates,);
 }
 
 @view
@@ -221,7 +243,7 @@ func get_mob_health{
     let (army_data) = mob_data_by_id.read(mob_id);
     let (unpacked_army_data) = Combat.unpack_army(army_data.ArmyPacked);
     let (health) = Mobs.get_health_from_unpacked_army(unpacked_army_data);
-    return (health=health);
+    return (health,);
 }
 
 @view
@@ -259,7 +281,17 @@ func get_mob_army_combat_data{
     mob_id: felt
 ) -> (mob_army_data: ArmyData) {
     let (army_data) = mob_data_by_id.read(mob_id);
-    return (mob_army_data=army_data);
+    return (army_data,);
+}
+
+@view
+func get_mob_attack_data{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}(
+    mob_id: felt, caller: felt
+) -> (attack_data: AttackData) {
+    let (attack_data) = mob_attack_data.read(mob_id, caller);
+    return (attack_data,);
 }
 
 // -----------------------------------

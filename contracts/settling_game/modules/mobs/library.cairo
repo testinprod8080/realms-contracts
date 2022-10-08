@@ -23,12 +23,12 @@ namespace Mobs {
         unpacked_army_data.LightInfantry.Health +
         unpacked_army_data.HeavyInfantry.Health;
         
-        return (health=health);
+        return (health,);
     }
 
     func check_mob_dead{range_check_ptr}(unpacked_army_data: Army) -> (dead: felt) {
         let (health) = get_health_from_unpacked_army(unpacked_army_data);
         let dead = is_le(health, 0);
-        return (dead=dead);
+        return (dead,);
     }
 }
