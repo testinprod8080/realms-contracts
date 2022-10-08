@@ -25,36 +25,36 @@ const TEST_X2 = (685471) + offset;
 
 const TEST_Y2 = (419800) + offset;
 
-// @external
-// func test_calculate_distance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-//     alloc_locals;
+@external
+func test_calculate_distance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
 
-//     let (distance) = Travel.calculate_distance(Point(TEST_X1, TEST_Y1), Point(TEST_X2, TEST_Y2));
+    let (distance) = Travel.calculate_distance(Point(TEST_X1, TEST_Y1), Point(TEST_X2, TEST_Y2));
 
-//     let (x) = pow(TEST_X2 - TEST_X1, 2);
-//     let (y) = pow(TEST_Y2 - TEST_Y1, 2);
+    let (x) = pow(TEST_X2 - TEST_X1, 2);
+    let (y) = pow(TEST_Y2 - TEST_Y1, 2);
 
-//     let sqr_distance = sqrt(x + y);
+    let sqr_distance = sqrt(x + y);
 
-//     let (d, _) = unsigned_div_rem(sqr_distance, PRECISION);
+    let (d, _) = unsigned_div_rem(sqr_distance, PRECISION);
 
-//     assert d = distance;
-//     %{ print('Distance:', ids.distance) %}
-//     return ();
-// }
+    assert d = distance;
+    %{ print('Distance:', ids.distance) %}
+    return ();
+}
 
-// @external
-// func test_time{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-//     alloc_locals;
+@external
+func test_time{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
 
-//     let (distance) = Travel.calculate_distance(Point(TEST_X1, TEST_Y1), Point(TEST_X2, TEST_Y2));
+    let (distance) = Travel.calculate_distance(Point(TEST_X1, TEST_Y1), Point(TEST_X2, TEST_Y2));
 
-//     let (time) = Travel.calculate_time(distance);
+    let (time) = Travel.calculate_time(distance);
 
-//     assert time = distance * SECONDS_PER_KM;
-//     %{ print('Time:', ids.time) %}
-//     return ();
-// }
+    assert time = distance * SECONDS_PER_KM;
+    %{ print('Time:', ids.time) %}
+    return ();
+}
 
 @external
 func test_travel_to_coordinates{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -62,7 +62,7 @@ func test_travel_to_coordinates{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
 
     // arrange inputs
     let traveller_contract_id = 1;
-    let traveller_token_id = Uint256(low=1, high=1);
+    let traveller_token_id = Uint256(1, 0);
     let traveller_nested_id = 1;
     let x = 10000;
     let y = 10000;

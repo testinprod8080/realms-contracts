@@ -9,9 +9,10 @@
 from contracts.settling_game.utils.game_structs import (
     Point,
 )
+from starkware.cairo.common.uint256 import Uint256
 
 struct SpawnConditions {
-    resource_id: felt,
-    resource_quantity: felt,
+    resource_id: Uint256,
+    resource_quantity: Uint256,
     coordinates: Point,
 }

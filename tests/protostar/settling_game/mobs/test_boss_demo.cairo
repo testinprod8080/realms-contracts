@@ -21,6 +21,11 @@ from contracts.settling_game.modules.mobs.Mobs import (
     get_mob_health,
     get_mob_army_combat_data,
     set_mob_army_data_and_emit,
+    set_spawn_conditions,
+    sacrifice_resources,
+)
+from contracts.settling_game.modules.mobs.game_structs import (
+    SpawnConditions,
 )
 from contracts.settling_game.modules.travel.Travel import (
     travel_to_coordinates,
@@ -54,17 +59,16 @@ func test_full_demo{
         print("Created boss army: " + str(ids.packed_boss_army))
     %}
 
-    // idea: sacrifice resources into escrow contract to spawn boss
-
     // spawn boss
     let x_coordinate = BOSS_X_COORD;
     let y_coordinate = BOSS_Y_COORD;
     let mob_id = 1;
+
     test_spawn_mob(mob_id, x_coordinate, y_coordinate);
 
     // travel to boss location
     let traveller_contract_id = ExternalContractIds.S_Realms;
-    let traveller_token_id = Uint256(low=1, high=1);
+    let traveller_token_id = Uint256(1, 0);
     let traveller_nested_id = 1;
     test_travel_to_boss_location(
         traveller_contract_id, 
@@ -76,7 +80,7 @@ func test_full_demo{
 
     // build weak army
     let attacking_weak_army_id = 1;
-    let attacking_realm_id = Uint256(low=1, high=1);
+    let attacking_realm_id = Uint256(1, 0);
 
     let (weak_battalion_ids: felt*) = alloc();
     assert weak_battalion_ids[0] = 1;
@@ -188,6 +192,18 @@ func test_spawn_mob{
     mob_id: felt,
 ) {
     alloc_locals;
+
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
+    set_spawn_conditions(
+        mob_id, 
+        SpawnConditions(
+            resource_id, resource_quantity, Point(x, y)
+        )
+    );
+    mock_IModuleController(MOCK_CONTRACT_ADDRESS);
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mock_IModuleController();
 
     // act
     spawn_mob(mob_id, x, y);

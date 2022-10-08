@@ -3,24 +3,30 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256
+
+from contracts.settling_game.library.library_module import Module
 from contracts.settling_game.utils.game_structs import (
     Point,
     ArmyData,
 )
+
 from contracts.settling_game.modules.mobs.Mobs import (
+    set_spawn_conditions,
+    sacrifice_resources,
     spawn_mob,
+    set_mob_army_data_and_emit,
     get_mob_coordinates,
     get_mob_health,
     get_mob_army_combat_data,
-    set_mob_army_data_and_emit,
-    mob_can_be_attacked,
-    set_spawn_conditions,
     get_spawn_conditions,
-    sacrifice_resources,
+    get_mob_sacrifice,
+    mob_can_be_attacked,
 )
 from contracts.settling_game.modules.mobs.game_structs import (
     SpawnConditions,
 )
+
+const MOCK_CONTRACT_ADDRESS = 0x3fe90a1958bb8468fb1b62970747d8a00c435ef96cda708ae8de3d07f1bb56b;
 
 @external
 func test_set_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -30,8 +36,8 @@ func test_set_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, r
     let x = 100;
     let y = 100;
     let mob_id = 1;
-    let resource_id = 1;
-    let resource_quantity = 100;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
 
     // act
     set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
@@ -47,6 +53,31 @@ func test_set_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, r
 }
 
 @external
+func test_sacrifice_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+
+    // arrange
+    let x = 100;
+    let y = 100;
+    let mob_id = 1;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
+    set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
+
+    // act
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mocks();
+
+    // assert
+    let (quantity) = get_mob_sacrifice(mob_id, resource_id);
+    assert quantity = resource_quantity;
+
+    return ();
+}
+
+@external
 func test_fail_spawn_mob_if_not_enough_resources{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }() {
@@ -56,10 +87,13 @@ func test_fail_spawn_mob_if_not_enough_resources{
     let x = 100;
     let y = 100;
     let mob_id = 1;
-    let resource_id = 1;
-    let resource_quantity = 100;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
     set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
-    sacrifice_resources(mob_id, resource_id, resource_quantity - 1);
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
+    sacrifice_resources(mob_id, resource_id, Uint256(99, 0));
+    stop_mocks();
 
     // act
     %{ expect_revert(error_message="Mobs: spawn conditions not met") %}
@@ -96,10 +130,13 @@ func test_fail_spawn_mob_if_exists{
     let x = 100;
     let y = 100;
     let mob_id = 1;
-    let resource_id = 1;
-    let resource_quantity = 100;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
     set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
     sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mocks();
     spawn_mob(mob_id, x, y);
 
     // act
@@ -119,10 +156,13 @@ func test_spawn_mob{
     let x = 100;
     let y = 100;
     let mob_id = 1;    
-    let resource_id = 1;
-    let resource_quantity = 100;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
     set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
     sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mocks();
 
     // act
     spawn_mob(mob_id, x, y);
@@ -202,10 +242,13 @@ func test_mob_can_be_attacked{
     let x = 100;
     let y = 100;
     let mob_id = 1;
-    let resource_id = 1;
-    let resource_quantity = 100;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
     set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
     sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mocks();
     spawn_mob(mob_id, x, y);
 
     // act
@@ -213,6 +256,34 @@ func test_mob_can_be_attacked{
 
     // assert
     assert can_attack = TRUE;
+
+    return ();
+}
+
+func setup_mocks(    
+    external_contract_address: felt,
+) {
+    %{
+        stop_mock_get_external_contract_address = mock_call(
+            ids.external_contract_address, 
+            "get_external_contract_address", 
+            [ids.external_contract_address]
+        ) 
+        stop_mock_safeTransferFrom = mock_call(
+            ids.external_contract_address, 
+            "safeTransferFrom", 
+            []
+        ) 
+    %}
+
+    return ();
+}
+
+func stop_mocks() {
+    %{ 
+        stop_mock_get_external_contract_address() 
+        stop_mock_safeTransferFrom()
+    %}
 
     return ();
 }

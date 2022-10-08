@@ -11,7 +11,11 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256
-from starkware.starknet.common.syscalls import get_block_timestamp
+from starkware.starknet.common.syscalls import (
+    get_block_timestamp, 
+    get_caller_address,
+    get_contract_address,
+)
 from starkware.cairo.common.math import (
     assert_not_zero,
     assert_le,
@@ -22,11 +26,13 @@ from openzeppelin.upgrades.library import Proxy
 
 from contracts.settling_game.library.library_module import Module
 from contracts.settling_game.interfaces.imodules import IModuleController
+from contracts.settling_game.interfaces.IERC1155 import IERC1155
 from contracts.settling_game.utils.game_structs import (
     Point,
     Army,
     Battalion,
     ArmyData,
+    ExternalContractIds,
 )
 
 from contracts.settling_game.modules.combat.library import Combat
@@ -50,7 +56,7 @@ func MobArmyMetadata(mob_id: felt, army_data: ArmyData) {
 }
 
 @event
-func MobSpawnOffering(mob_id: felt, resource_id: felt, resource_quantity: felt) {
+func MobSpawnOffering(mob_id: felt, resource_id: Uint256, resource_quantity: Uint256, time_stamp: felt) {
 }
 
 // -----------------------------------
@@ -70,7 +76,7 @@ func mob_spawn_conditions(mob_id: felt) -> (conditions: SpawnConditions) {
 }
 
 @storage_var
-func mob_sacrifice(mob_id: felt, resource_id: felt) -> (resource_quantity: felt) {
+func mob_sacrifice(mob_id: felt, resource_id: Uint256) -> (resource_quantity: Uint256) {
 }
 
 
@@ -81,16 +87,34 @@ func mob_sacrifice(mob_id: felt, resource_id: felt) -> (resource_quantity: felt)
 // @notice deposit resources towards mob spawn requirements
 @external
 func sacrifice_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    mob_id: felt, resource_id: felt, resource_quantity: felt
+    mob_id: felt, resource_id: Uint256, resource_quantity: Uint256
 ) {
     alloc_locals;
 
     // TODO check requirements for mob for this resource so that
     // we can revert if they are depositing too much
 
+    let (resources_address) = Module.get_external_contract_address(ExternalContractIds.Resources);
+    let (caller) = get_caller_address();
+    let (contract_address) = get_contract_address();
+
+    let (local data: felt*) = alloc();
+    assert data[0] = 0;
+
+    IERC1155.safeTransferFrom(
+        resources_address,
+        caller,
+        contract_address,
+        resource_id,
+        resource_quantity,
+        1,
+        data,
+    );
+
     mob_sacrifice.write(mob_id, resource_id, resource_quantity);
 
-    MobSpawnOffering.emit(mob_id, resource_id, resource_quantity);
+    let (ts) = get_block_timestamp();
+    MobSpawnOffering.emit(mob_id, resource_id, resource_quantity, ts);
 
     return ();
 }
@@ -105,27 +129,17 @@ func spawn_mob{
     alloc_locals;
 
     let (spawn_conditions) = mob_spawn_conditions.read(mob_id);
+    let has_required_resources = is_not_zero(spawn_conditions.resource_id.low + spawn_conditions.resource_id.high);
 
     with_attr error_message("Mobs: no spawn condition found") {
-        assert_not_zero(spawn_conditions.resource_id);
+        assert_not_zero(has_required_resources);
     }
 
     with_attr error_message("Mobs: spawn conditions not met") {
-        let has_required_resources = is_not_zero(spawn_conditions.resource_id);
-        if (has_required_resources == TRUE) {
-            let (sacrificed_resources) = mob_sacrifice.read(
-                mob_id, spawn_conditions.resource_id
-            );
-            assert_le(spawn_conditions.resource_quantity, sacrificed_resources);
-
-            tempvar range_check_ptr = range_check_ptr;
-            tempvar syscall_ptr = syscall_ptr;
-            tempvar pedersen_ptr = pedersen_ptr;
-        } else {
-            tempvar range_check_ptr = range_check_ptr;
-            tempvar syscall_ptr = syscall_ptr;
-            tempvar pedersen_ptr = pedersen_ptr;
-        }
+        let (sacrificed_resources) = mob_sacrifice.read(
+            mob_id, spawn_conditions.resource_id
+        );
+        assert_le(spawn_conditions.resource_quantity.low, sacrificed_resources.low);
     }
 
     // check spawn conditions
@@ -186,6 +200,14 @@ func get_spawn_conditions{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
 ) -> (conditions: SpawnConditions) {
     let (conditions) = mob_spawn_conditions.read(mob_id);
     return (conditions=conditions);
+}
+
+@view
+func get_mob_sacrifice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    mob_id: felt, resource_id: Uint256,
+) -> (resource_quantity: Uint256) {
+    let (resource_quantity) = mob_sacrifice.read(mob_id, resource_id);
+    return (resource_quantity=resource_quantity);
 }
 
 @view
