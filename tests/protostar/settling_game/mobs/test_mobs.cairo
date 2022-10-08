@@ -168,7 +168,7 @@ func test_spawn_mob{
 
     // assert data stored
     let (health) = get_mob_health(mob_id);
-    assert health = 18400;
+    assert health = 800;
 
     let (army_data) = get_mob_army_combat_data(mob_id);
     assert army_data.ArmyPacked = 249537519729966414970199203575; // max army

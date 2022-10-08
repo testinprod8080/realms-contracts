@@ -42,6 +42,7 @@ from contracts.settling_game.modules.combat.constants import (
 from contracts.settling_game.modules.mobs.game_structs import (
     SpawnConditions,
 )
+from contracts.settling_game.modules.mobs.library import Mobs
 
 // -----------------------------------
 // Events
@@ -56,7 +57,7 @@ func MobArmyMetadata(mob_id: felt, army_data: ArmyData) {
 }
 
 @event
-func MobSpawnOffering(mob_id: felt, resource_id: Uint256, resource_quantity: Uint256, time_stamp: felt) {
+func MobSpawnOffering(caller: felt, mob_id: felt, resource_id: Uint256, resource_quantity: Uint256, time_stamp: felt) {
 }
 
 // -----------------------------------
@@ -110,7 +111,7 @@ func sacrifice_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_c
     mob_sacrifice.write(mob_id, resource_id, resource_quantity);
 
     let (ts) = get_block_timestamp();
-    MobSpawnOffering.emit(mob_id, resource_id, resource_quantity, ts);
+    MobSpawnOffering.emit(caller, mob_id, resource_id, resource_quantity, ts);
 
     return ();
 }
@@ -219,14 +220,7 @@ func get_mob_health{
 ) -> (health: felt) {
     let (army_data) = mob_data_by_id.read(mob_id);
     let (unpacked_army_data) = Combat.unpack_army(army_data.ArmyPacked);
-    let health = unpacked_army_data.LightCavalry.Health * unpacked_army_data.LightCavalry.Quantity +
-        unpacked_army_data.HeavyCavalry.Health * unpacked_army_data.HeavyCavalry.Quantity +
-        unpacked_army_data.Archer.Health * unpacked_army_data.Archer.Quantity +
-        unpacked_army_data.Longbow.Health * unpacked_army_data.Longbow.Quantity +
-        unpacked_army_data.Mage.Health * unpacked_army_data.Mage.Quantity +
-        unpacked_army_data.Arcanist.Health * unpacked_army_data.Arcanist.Quantity +
-        unpacked_army_data.LightInfantry.Health * unpacked_army_data.LightInfantry.Quantity +
-        unpacked_army_data.HeavyInfantry.Health * unpacked_army_data.HeavyInfantry.Quantity;
+    let (health) = Mobs.get_health_from_unpacked_army(unpacked_army_data);
     return (health=health);
 }
 

@@ -456,6 +456,8 @@ func attack_mob{
         mob_coordinates.y,
     );
 
+    // TODO: integrate food penalty?
+    
     // fetch combat data
     let (attacking_realm_data: ArmyData) = get_realm_army_combat_data(
         attacking_army_id, attacking_realm_id

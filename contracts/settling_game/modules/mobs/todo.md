@@ -10,18 +10,18 @@
 - [x] player attack boss
 - [x] boss defend, health, and death
 - [x] pay resources to spawn boss
-- [ ] pay to travel to boss location/fight boss?
-- [ ] claim reward (could be NFT)
-    - idea: claim resources
-    - idea: biome specific trophy
-    - idea: first blood, final blow, most damage
+- [ ] reward: claim nft trophy
+- [ ] generative boss stats
+- [ ] move everything to standalone module?
+    - [ ] Combat
+    - [ ] Travel
+
+- [ ] spawn condition: batch resources spawn offering
 - [ ] boss travel
 - [ ] player attack cooldown
 - [ ] boss attack
 - [ ] player defend against boss
-
-- [ ] generative boss stats
-
+- [ ] token gating: pay to travel to boss location/fight boss?
 - [ ] spawn minion(s)
     - [ ] current location
     - [ ] health
@@ -29,6 +29,10 @@
 - [ ] minion travel
 - [ ] minion attack
 - [ ] minion defend, health, and death
+
+- [ ] reward: trophy biome specific 
+- [ ] reward first blood, final blow, most damage
+- [ ] reward: claim resources reward
 
 - [ ] look at respawning boss with higher difficulty (higher health and attack strength, num of minions spawned)
   - [ ] track level
