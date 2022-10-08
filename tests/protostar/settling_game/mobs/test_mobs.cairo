@@ -15,7 +15,6 @@ from contracts.settling_game.modules.mobs.Mobs import (
     sacrifice_resources,
     spawn_mob,
     set_mob_army_data_and_emit,
-    get_mob_coordinates,
     get_mob_health,
     get_mob_army_combat_data,
     get_spawn_conditions,
@@ -97,7 +96,7 @@ func test_fail_spawn_mob_if_not_enough_resources{
 
     // act
     %{ expect_revert(error_message="Mobs: spawn conditions not met") %}
-    spawn_mob(mob_id, x, y);
+    spawn_mob(mob_id);
 
     return ();
 }
@@ -115,7 +114,7 @@ func test_fail_spawn_mob_without_spawn_conditions{
 
     // act
     %{ expect_revert(error_message="Mobs: no spawn condition found") %}
-    spawn_mob(mob_id, x, y);
+    spawn_mob(mob_id);
 
     return ();    
 }
@@ -137,11 +136,11 @@ func test_fail_spawn_mob_if_exists{
     Module.initializer(MOCK_CONTRACT_ADDRESS);
     sacrifice_resources(mob_id, resource_id, resource_quantity);
     stop_mocks();
-    spawn_mob(mob_id, x, y);
+    spawn_mob(mob_id);
 
     // act
     %{ expect_revert(error_message="Mobs: only one mob alive at a time") %}
-    spawn_mob(mob_id, x, y);
+    spawn_mob(mob_id);
 
     return ();
 }
@@ -165,12 +164,7 @@ func test_spawn_mob{
     stop_mocks();
 
     // act
-    spawn_mob(mob_id, x, y);
-
-    // assert spawned at expected location
-    let (coordinates) = get_mob_coordinates(mob_id);
-    assert coordinates.x = x;
-    assert coordinates.y = y;
+    spawn_mob(mob_id);
 
     // assert data stored
     let (health) = get_mob_health(mob_id);
@@ -186,8 +180,10 @@ func test_spawn_mob{
                 "name": "MobSpawn", 
                 "data": {
                     "mob_id": ids.mob_id, 
-                    "x": ids.x,
-                    "y": ids.y,
+                    "coordinates": {
+                        "x": ids.x,
+                        "y": ids.y
+                    },
                     "time_stamp": 0
                 }
             }
@@ -249,7 +245,7 @@ func test_mob_can_be_attacked{
     Module.initializer(MOCK_CONTRACT_ADDRESS);
     sacrifice_resources(mob_id, resource_id, resource_quantity);
     stop_mocks();
-    spawn_mob(mob_id, x, y);
+    spawn_mob(mob_id);
 
     // act
     let (can_attack) = mob_can_be_attacked(mob_id);

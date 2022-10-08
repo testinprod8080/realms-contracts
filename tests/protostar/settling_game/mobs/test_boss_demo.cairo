@@ -202,11 +202,19 @@ func test_spawn_mob{
         )
     );
     mock_IModuleController(MOCK_CONTRACT_ADDRESS);
+    %{
+        stop_mock_safeTransferFrom = mock_call(
+            ids.MOCK_CONTRACT_ADDRESS, 
+            "safeTransferFrom", 
+            []
+        ) 
+    %}
     sacrifice_resources(mob_id, resource_id, resource_quantity);
     stop_mock_IModuleController();
+    %{ stop_mock_safeTransferFrom() %}
 
     // act
-    spawn_mob(mob_id, x, y);
+    spawn_mob(mob_id);
 
     // assert
     %{
@@ -215,8 +223,10 @@ func test_spawn_mob{
                 "name": "MobSpawn", 
                 "data": {
                     "mob_id": ids.mob_id, 
-                    "x": ids.x,
-                    "y": ids.y,
+                    "coordinates": {
+                        "x": ids.x,
+                        "y": ids.y
+                    },
                     "time_stamp": 0
                 }
             }

@@ -9,7 +9,7 @@
 - [x] player travel to boss location
 - [x] player attack boss
 - [x] boss defend, health, and death
-- [ ] pay resources to spawn boss
+- [x] pay resources to spawn boss
 - [ ] pay to travel to boss location/fight boss?
 - [ ] claim reward (could be NFT)
     - idea: claim resources

@@ -48,7 +48,7 @@ from contracts.settling_game.modules.mobs.game_structs import (
 // -----------------------------------
 
 @event
-func MobSpawn(mob_id: felt, x: felt, y: felt, time_stamp: felt) {
+func MobSpawn(mob_id: felt, coordinates: Point, time_stamp: felt) {
 }
 
 @event
@@ -65,10 +65,6 @@ func MobSpawnOffering(mob_id: felt, resource_id: Uint256, resource_quantity: Uin
 
 @storage_var
 func mob_data_by_id(mob_id: felt) -> (army_data: ArmyData) {
-}
-
-@storage_var
-func mob_coordinates(mob_id: felt) -> (point: Point) {
 }
 
 @storage_var
@@ -124,7 +120,7 @@ func sacrifice_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_c
 func spawn_mob{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }(
-    mob_id: felt, x: felt, y: felt
+    mob_id: felt
 ) {
     alloc_locals;
 
@@ -150,9 +146,6 @@ func spawn_mob{
 
     // TODO do something with sacrificed resources (split to treasury/module fee/burn/etc)
 
-    // store spawn coordinates
-    mob_coordinates.write(mob_id, Point(x=x, y=y));
-
     // store army stats
     let unpacked_army = Army(
         LightCavalry=Battalion(Quantity=23, Health=100),
@@ -169,7 +162,7 @@ func spawn_mob{
 
     // emit mob spawn
     let (ts) = get_block_timestamp();
-    MobSpawn.emit(mob_id, x, y, ts);
+    MobSpawn.emit(mob_id, spawn_conditions.coordinates, ts);
 
     return ();
 }
@@ -214,8 +207,8 @@ func get_mob_sacrifice{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
 func get_mob_coordinates{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     mob_id: felt
 ) -> (coordinates: Point) {
-    let (point) = mob_coordinates.read(mob_id);
-    return (coordinates=point);
+    let (conditions) = mob_spawn_conditions.read(mob_id);
+    return (coordinates=conditions.coordinates);
 }
 
 @view
