@@ -14,6 +14,7 @@ from contracts.settling_game.modules.mobs.Mobs import (
     set_spawn_conditions,
     sacrifice_resources,
     spawn_mob,
+    claim_rewards,
     set_mob_army_data_and_emit,
     get_mob_health,
     get_mob_army_combat_data,
@@ -192,6 +193,94 @@ func test_spawn_mob{
     %}
 
     return ();
+}
+
+@external
+func test_fail_cannot_claim_rewards_if_mob_not_dead{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}() {
+    alloc_locals;
+
+    // arrange
+    let x = 100;
+    let y = 100;
+    let mob_id = 1;    
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
+    set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mocks();
+    spawn_mob(mob_id);
+
+    // act & assert
+    %{ expect_revert(error_message="Mobs: cannot claim reward if mob is still alive") %}
+    claim_rewards(mob_id);
+
+    return();    
+}
+
+@external
+func test_fail_did_not_attack_cannot_claim_rewards{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}() {
+    alloc_locals;
+
+    let mob_id = 1;
+
+    %{ expect_revert(error_message="Mobs: cannot claim reward if did not attack") %}
+    claim_rewards(mob_id);
+
+    return();    
+}
+
+@external
+func test_claim_rewards{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}() {
+    alloc_locals;
+
+    // arrange - spawn mob
+    let x = 100;
+    let y = 100;
+    let mob_id = 1;    
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
+    set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
+    spawn_mob(mob_id);
+
+    // arrange - set damage inflicted
+    let army_data = ArmyData(1, 0, 0, 0, 0);
+    let caller = MOCK_CONTRACT_ADDRESS;
+    let damage_inflicted  = 10;
+    let timestamp = 1;
+    set_mob_army_data_and_emit(
+        mob_id, army_data, caller, damage_inflicted, timestamp
+    );
+
+    %{ 
+        stop_prank_callable = start_prank(ids.MOCK_CONTRACT_ADDRESS) 
+        stop_mock_IERC115 = mock_call(
+            ids.MOCK_CONTRACT_ADDRESS, 
+            "mint", 
+            []
+        ) 
+    %}  
+
+    // act
+    claim_rewards(mob_id);
+
+    %{ 
+        stop_prank_callable()
+        stop_mock_IERC115()
+    %}
+    stop_mocks();
+
+    return();    
 }
 
 @external

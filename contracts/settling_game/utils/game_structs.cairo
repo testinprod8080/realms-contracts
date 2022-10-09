@@ -181,6 +181,7 @@ namespace ExternalContractIds {
     const Storage = 6;
     const Crypts = 7;
     const S_Crypts = 8;
+    const Mob_Rewards = 9;
 }
 
 struct CryptData {

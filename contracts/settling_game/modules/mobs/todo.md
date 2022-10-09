@@ -10,12 +10,16 @@
 - [x] player attack boss
 - [x] boss defend, health, and death
 - [x] pay resources to spawn boss
-- [ ] reward: claim nft trophy
+- [x] reward: claim nft trophy
+    - [x] mint contract (resources erc1155)
 - [ ] generative boss stats
 - [ ] move everything to standalone module?
     - [ ] Combat
     - [ ] Travel
+- [ ] readme
+- [ ] demo video
 
+- [ ] reward: batch mint multiple rewards
 - [ ] spawn condition: batch resources spawn offering
 - [ ] boss travel
 - [ ] player attack cooldown

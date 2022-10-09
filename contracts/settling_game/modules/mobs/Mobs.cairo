@@ -46,6 +46,7 @@ from contracts.settling_game.modules.mobs.game_structs import (
 from contracts.settling_game.modules.mobs.library import Mobs
 from contracts.settling_game.modules.mobs.constants import (
     MOB_PLAYER_ATTACK_COOLDOWN_PERIOD,
+    RewardIds,
 )
 
 // -----------------------------------
@@ -71,7 +72,6 @@ func MobSpawnOffering(caller: felt, mob_id: felt, resource_id: Uint256, resource
 @storage_var
 func mob_data_by_id(mob_id: felt) -> (army_data: ArmyData) {
 }
-
 
 @storage_var
 func mob_spawn_conditions(mob_id: felt) -> (conditions: SpawnConditions) {
@@ -135,10 +135,10 @@ func spawn_mob{
     alloc_locals;
 
     let (spawn_conditions) = mob_spawn_conditions.read(mob_id);
-    let has_required_resources = is_not_zero(spawn_conditions.resource_id.low + spawn_conditions.resource_id.high);
 
     with_attr error_message("Mobs: no spawn condition found") {
-        assert_not_zero(has_required_resources);
+        let has_spawn_conditions = is_not_zero(spawn_conditions.resource_id.low + spawn_conditions.resource_id.high);
+        assert_not_zero(has_spawn_conditions);
     }
 
     with_attr error_message("Mobs: spawn conditions not met") {
@@ -148,7 +148,6 @@ func spawn_mob{
         assert_le(spawn_conditions.resource_quantity.low, sacrificed_resources.low);
     }
 
-    // check spawn conditions
     with_attr error_message("Mobs: only one mob alive at a time") {
         let (army_data) = mob_data_by_id.read(mob_id);
         assert army_data.ArmyPacked = 0;
@@ -173,6 +172,56 @@ func spawn_mob{
     // emit mob spawn
     let (ts) = get_block_timestamp();
     MobSpawn.emit(mob_id, spawn_conditions.coordinates, ts);
+
+    return ();
+}
+
+@external
+func claim_rewards{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(
+    mob_id: felt
+) {
+    alloc_locals;
+
+    let (mob_health) = get_mob_health(mob_id);
+    let dead = is_le(mob_health, 0);
+    with_attr error_message("Mobs: cannot claim reward if mob is still alive") {
+        assert dead = TRUE;
+    }
+
+    let (caller) = get_caller_address();
+    let (attack_data) = get_mob_attack_data(mob_id, caller);
+
+    with_attr error_message("Mobs: cannot claim reward if did not attack") {
+        assert_not_zero(attack_data.total_damage_inflicted);
+    }
+
+    let (mob_rewards_address) = Module.get_external_contract_address(ExternalContractIds.Mob_Rewards);
+
+    let (local data: felt*) = alloc();
+    assert data[0] = 0;
+
+    IERC1155.mint(
+        mob_rewards_address,
+        caller,
+        Uint256(RewardIds.MobMeat, 0),
+        Uint256(1, 0),
+        1,
+        data
+    );
+
+    // TODO support minting multiple rewards
+    // let (rewards_len, reward_ids) = Mobs.get_claimable_reward_ids(attack_data);
+    //
+    // IERC1155.mintBatch(
+    //     mob_rewards_address,
+    //     caller,
+    //     rewards_len,
+    //     reward_ids,
+    //     rewards_len,
+    //     ,
+    //     1,
+    //     data,
+    // );
 
     return ();
 }
