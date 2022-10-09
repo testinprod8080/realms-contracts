@@ -224,13 +224,43 @@ func test_set_mob_army_data{
 }
 
 @external
-func test_fail_dead_mob_cannot_be_attacked{
+func test_dead_mob_cannot_be_attacked{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }() {
     alloc_locals;
 
     // act
-    let (can_attack) = mob_can_be_attacked(0);
+    let (can_attack) = mob_can_be_attacked(0, 0);
+
+    // assert
+    assert can_attack = FALSE;
+
+    return ();
+}
+
+@external
+func test_mob_cannot_be_attacked_before_cooldown{
+    syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
+}() {
+    alloc_locals;
+
+    // arrange
+    let x = 100;
+    let y = 100;
+    let mob_id = 1;
+    let resource_id = Uint256(1, 0);
+    let resource_quantity = Uint256(100, 0);
+
+    set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
+    setup_mocks(MOCK_CONTRACT_ADDRESS);
+    Module.initializer(MOCK_CONTRACT_ADDRESS);
+    sacrifice_resources(mob_id, resource_id, resource_quantity);
+    stop_mocks();
+
+    spawn_mob(mob_id);
+
+    // act
+    let (can_attack) = mob_can_be_attacked(mob_id, MOCK_CONTRACT_ADDRESS);
 
     // assert
     assert can_attack = FALSE;
@@ -250,15 +280,20 @@ func test_mob_can_be_attacked{
     let mob_id = 1;
     let resource_id = Uint256(1, 0);
     let resource_quantity = Uint256(100, 0);
+
     set_spawn_conditions(mob_id, SpawnConditions(resource_id, resource_quantity, Point(x, y)));
     setup_mocks(MOCK_CONTRACT_ADDRESS);
     Module.initializer(MOCK_CONTRACT_ADDRESS);
     sacrifice_resources(mob_id, resource_id, resource_quantity);
     stop_mocks();
+
     spawn_mob(mob_id);
+    %{ stop_warp = warp(1000000) %}
 
     // act
-    let (can_attack) = mob_can_be_attacked(mob_id);
+    let (can_attack) = mob_can_be_attacked(mob_id, MOCK_CONTRACT_ADDRESS);
+
+    %{ stop_warp() %}
 
     // assert
     assert can_attack = TRUE;

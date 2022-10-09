@@ -136,10 +136,6 @@ const ATTACKING_ARMY_XP = 100;
 // total battalions
 const TOTAL_BATTALIONS = 30;
 
-// a min delay between attacks on a mob; it can't
-// be attacked again during cooldown
-const MOB_ATTACK_COOLDOWN_PERIOD = DAY / 10;  // 1 day unit
-
 // -----------------------------------
 // Crypts
 // -----------------------------------

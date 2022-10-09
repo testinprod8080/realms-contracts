@@ -433,12 +433,13 @@ func attack_mob{
 ) -> (combat_outcome: felt) {
     alloc_locals;
 
+    let (caller) = get_caller_address();
     let (mob_module) = Module.get_module_address(ModuleIds.Mobs);
 
     with_attr error_message("Combat: Cannot initiate combat against mob") {
         Module.ERC721_owner_check(attacking_realm_id, ExternalContractIds.S_Realms);
         let (can_attack) = IMob.mob_can_be_attacked(
-            mob_module, mob_id
+            mob_module, mob_id, caller
         );
         assert can_attack = TRUE;
     }
@@ -506,7 +507,6 @@ func attack_mob{
     // }
 
     let (now) = get_block_timestamp();
-    let (caller) = get_caller_address();
 
     if (combat_outcome == COMBAT_OUTCOME_ATTACKER_WINS) {
         tempvar syscall_ptr = syscall_ptr;

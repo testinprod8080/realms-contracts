@@ -14,7 +14,7 @@ namespace IMob {
     func get_mob_coordinates(mob_id: felt) -> (coordinates: Point) {
     }
 
-    func mob_can_be_attacked(mob_id: felt) -> (yesno: felt) {
+    func mob_can_be_attacked(mob_id: felt, caller: felt) -> (yesno: felt) {
     }
 
     func get_mob_army_combat_data(mob_id: felt) -> (mob_army_data: ArmyData) {

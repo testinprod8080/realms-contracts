@@ -20,7 +20,7 @@ from starkware.cairo.common.math import (
     assert_not_zero,
     assert_le,
 )
-from starkware.cairo.common.math_cmp import is_not_zero
+from starkware.cairo.common.math_cmp import is_not_zero, is_le
 
 from openzeppelin.upgrades.library import Proxy
 
@@ -44,6 +44,9 @@ from contracts.settling_game.modules.mobs.game_structs import (
     AttackData,
 )
 from contracts.settling_game.modules.mobs.library import Mobs
+from contracts.settling_game.modules.mobs.constants import (
+    MOB_PLAYER_ATTACK_COOLDOWN_PERIOD,
+)
 
 // -----------------------------------
 // Events
@@ -250,7 +253,7 @@ func get_mob_health{
 func mob_can_be_attacked{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 }(
-    mob_id: felt
+    mob_id: felt, caller: felt
 ) -> (yesno: felt) {
     alloc_locals;
 
@@ -261,15 +264,13 @@ func mob_can_be_attacked{
     }
 
     // TODO attack cooldown?
-    // let (mob_army_data: ArmyData) = get_mob_army_combat_data(mob_id);
-
-    // let (now) = get_block_timestamp();
-    // let diff = now - mob_army_data.LastAttacked;
-    // let was_attacked_recently = is_le(diff, ATTACK_COOLDOWN_PERIOD);
-
-    // if (was_attacked_recently == 1) {
-    //     return (FALSE);
-    // }
+    let (attack_data) = get_mob_attack_data(mob_id, caller);
+    let (now) = get_block_timestamp();
+    let diff = now - attack_data.last_attack_timestamp;
+    let was_attacked_recently = is_le(diff, MOB_PLAYER_ATTACK_COOLDOWN_PERIOD);
+    if (was_attacked_recently == TRUE) {
+        return (FALSE,);
+    }
 
     return (TRUE,);
 }
