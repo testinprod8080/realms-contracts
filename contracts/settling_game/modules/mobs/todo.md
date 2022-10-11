@@ -12,19 +12,17 @@
 - [x] pay resources to spawn boss
 - [x] reward: claim nft trophy
     - [x] mint contract (resources erc1155)
+- [x] mob custom logic proxies
+- [x] player attack cooldown
+
 - [ ] generative boss stats
 - [ ] move everything to standalone module?
     - [ ] Combat
     - [ ] Travel
-- [ ] readme
-- [ ] demo video
-
 - [ ] reward: batch mint multiple rewards
 - [ ] spawn condition: batch resources spawn offering
 - [ ] boss travel
-- [ ] player attack cooldown
-- [ ] boss attack
-- [ ] player defend against boss
+- [ ] boss active attack
 - [ ] token gating: pay to travel to boss location/fight boss?
 - [ ] spawn minion(s)
     - [ ] current location
@@ -36,7 +34,6 @@
 
 - [ ] reward: trophy biome specific 
 - [ ] reward first blood, final blow, most damage
-- [ ] reward: claim resources reward
 
 - [ ] look at respawning boss with higher difficulty (higher health and attack strength, num of minions spawned)
   - [ ] track level
@@ -62,13 +59,3 @@
 ### Considerations
 - if using the Combat module, what is the army composition of bosses based on type, traits, etc?
 - boss generation algo for new and leveling up
-
-### Data Structure
-
-Boss spawn requirements lookup
-- mob_id
-- resource_ids[]
-- resource_quantity[]
-- x_coordinate
-- y_coordinate
-- (future) requirements_contract_address - for custom requirements

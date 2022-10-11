@@ -316,7 +316,7 @@ func get_mob_health{
 }(
     mob_id: felt
 ) -> (health: felt) {
-    let (army_data) = get_mob_army_combat_data(mob_id);
+    let (army_data) = mob_data_by_id.read(mob_id);
     let (unpacked_army_data) = Combat.unpack_army(army_data.ArmyPacked);
     let (health) = Mobs.get_health_from_unpacked_army(unpacked_army_data);
     return (health,);

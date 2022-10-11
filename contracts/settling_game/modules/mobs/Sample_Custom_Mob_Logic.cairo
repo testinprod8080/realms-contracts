@@ -22,7 +22,7 @@ from contracts.settling_game.utils.constants import DAY
 const TIME_UNTIL_HEALTH_RESTORE = DAY / 10; // 1 day unit
 
 // @notice restores army health based on last attack timestamp
-@external
+@view
 func modify_army_data_before_combat{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, bitwise_ptr: BitwiseBuiltin*
 } (army_data: ArmyData) -> (modified_army_data: ArmyData) {
@@ -72,7 +72,7 @@ func modify_army_data_before_combat{
 
 // @notice no custom logic
 // @dev interface needs to be implemented
-@external
+@view
 func modify_army_data_after_combat(army_data: ArmyData
 ) -> (modified_army_data: ArmyData) {
     return (army_data,);
