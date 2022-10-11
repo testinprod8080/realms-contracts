@@ -1,4 +1,5 @@
 ![Mobs module header](/static/mobs_module.png)
+
 _cave paintings of monsters that once roamed the Realms_
 
 # Mobs Module
