@@ -65,7 +65,6 @@ The rewards system is very basic at this point. All attackers can claim mob meat
 - [ ] Spawning: Generative stats
 - [ ] Rewards: proportional to damage inflicted
 - [ ] Rewards: support multiple reward types
-- [ ] Rewards: 
 - [ ] Spawn Conditions: multiple resource/token types for offering
 - [ ] Mob Mechanics: mob can travel
 - [ ] Mob Mechanics: mob actively attacks
