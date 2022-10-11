@@ -66,6 +66,9 @@ from contracts.settling_game.utils.game_structs import (
     Army,
     ArmyData,
 )
+from contracts.settling_game.modules.mobs.constants import (
+    ATTACK_MOB_XP,
+)
 
 // -----------------------------------
 // Events
@@ -494,35 +497,7 @@ func attack_mob{
     let (ending_attacking_army: Army) = Combat.unpack_army(ending_attacking_army_packed);
     let (ending_mob_army: Army) = Combat.unpack_army(ending_mob_army_packed);
 
-    // TODO if mob died, trigger rewards
-    // let (dead) = Mobs.check_mob_dead(ending_mob_army);
-    // if (dead == TRUE) {
-    //     tempvar syscall_ptr = syscall_ptr;
-    //     tempvar range_check_ptr = range_check_ptr;
-    //     tempvar pedersen_ptr = pedersen_ptr;
-    // } else {
-    //     tempvar syscall_ptr = syscall_ptr;
-    //     tempvar range_check_ptr = range_check_ptr;
-    //     tempvar pedersen_ptr = pedersen_ptr;
-    // }
-
     let (now) = get_block_timestamp();
-
-    if (combat_outcome == COMBAT_OUTCOME_ATTACKER_WINS) {
-        tempvar syscall_ptr = syscall_ptr;
-        tempvar range_check_ptr = range_check_ptr;
-        tempvar pedersen_ptr = pedersen_ptr;
-
-        tempvar attacking_xp = ATTACKING_ARMY_XP;
-    } else {
-        tempvar syscall_ptr = syscall_ptr;
-        tempvar range_check_ptr = range_check_ptr;
-        tempvar pedersen_ptr = pedersen_ptr;
-
-        tempvar attacking_xp = DEFENDING_ARMY_XP;
-    }
-
-    tempvar attacking_xp = attacking_xp;
 
     // calculate damage inflicted
     let (ending_mob_health) = Mobs.get_health_from_unpacked_army(starting_mob_army);
@@ -532,7 +507,7 @@ func attack_mob{
     set_army_data_and_emit(
         attacking_army_id,
         attacking_realm_id,
-        ArmyData(ending_attacking_army_packed, now, attacking_realm_data.XP + attacking_xp, attacking_realm_data.Level, attacking_realm_data.CallSign),
+        ArmyData(ending_attacking_army_packed, now, attacking_realm_data.XP + ATTACK_MOB_XP, attacking_realm_data.Level, attacking_realm_data.CallSign),
     );
 
     IMob.set_mob_army_data_and_emit(

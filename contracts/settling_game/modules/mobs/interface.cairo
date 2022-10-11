@@ -29,3 +29,12 @@ namespace IMob {
     ) {
     }
 }
+
+@contract_interface
+namespace ICustomMob {
+    func modify_army_data_before_combat(army_data: ArmyData) -> (modified_army_data: ArmyData) {
+    }
+
+    func modify_army_data_after_combat(army_data: ArmyData) -> (modified_army_data: ArmyData) {
+    }
+}

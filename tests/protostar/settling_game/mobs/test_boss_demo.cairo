@@ -198,7 +198,7 @@ func test_spawn_mob{
     set_spawn_conditions(
         mob_id, 
         SpawnConditions(
-            resource_id, resource_quantity, Point(x, y)
+            resource_id, resource_quantity, Point(x, y), 0
         )
     );
     mock_IModuleController(MOCK_CONTRACT_ADDRESS);

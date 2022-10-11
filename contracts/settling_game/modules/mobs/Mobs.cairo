@@ -48,6 +48,7 @@ from contracts.settling_game.modules.mobs.constants import (
     MOB_PLAYER_ATTACK_COOLDOWN_PERIOD,
     RewardIds,
 )
+from contracts.settling_game.modules.mobs.interface import ICustomMob
 
 // -----------------------------------
 // Events
@@ -235,6 +236,7 @@ func set_mob_army_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
     timestamp: felt,
 ) {
     // TODO restrict caller
+    // Module.only_approved();
     
     let (attack_data) = mob_attack_data.read(mob_id, caller);
     mob_attack_data.write(
@@ -245,6 +247,28 @@ func set_mob_army_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, 
             timestamp,
         ),
     );
+
+    // modify mob army data if custom logic exists
+    let (spawn_conditions) = get_spawn_conditions(mob_id);
+    let has_custom_contract = is_not_zero(spawn_conditions.custom_contract_address);
+    if (has_custom_contract == TRUE) {
+        let (modified_army_data) = ICustomMob.modify_army_data_after_combat(
+            spawn_conditions.custom_contract_address,
+            army_data,
+        );
+
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+
+        tempvar army_data = modified_army_data;
+    } else {
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+
+        tempvar army_data = army_data;
+    }
 
     mob_data_by_id.write(mob_id, army_data);
 
@@ -292,7 +316,7 @@ func get_mob_health{
 }(
     mob_id: felt
 ) -> (health: felt) {
-    let (army_data) = mob_data_by_id.read(mob_id);
+    let (army_data) = get_mob_army_combat_data(mob_id);
     let (unpacked_army_data) = Combat.unpack_army(army_data.ArmyPacked);
     let (health) = Mobs.get_health_from_unpacked_army(unpacked_army_data);
     return (health,);
@@ -331,6 +355,29 @@ func get_mob_army_combat_data{
     mob_id: felt
 ) -> (mob_army_data: ArmyData) {
     let (army_data) = mob_data_by_id.read(mob_id);
+    
+    // modify mob army data if custom logic exists
+    let (spawn_conditions) = get_spawn_conditions(mob_id);
+    let has_custom_contract = is_not_zero(spawn_conditions.custom_contract_address);
+    if (has_custom_contract == TRUE) {
+        let (modified_army_data) = ICustomMob.modify_army_data_before_combat(
+            spawn_conditions.custom_contract_address,
+            army_data,
+        );
+
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+
+        tempvar army_data = modified_army_data;
+    } else {
+        tempvar syscall_ptr = syscall_ptr;
+        tempvar range_check_ptr = range_check_ptr;
+        tempvar pedersen_ptr = pedersen_ptr;
+
+        tempvar army_data = army_data;
+    }
+
     return (army_data,);
 }
 

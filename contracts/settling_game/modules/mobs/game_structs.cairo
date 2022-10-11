@@ -15,6 +15,7 @@ struct SpawnConditions {
     resource_id: Uint256,
     resource_quantity: Uint256,
     coordinates: Point,
+    custom_contract_address: felt,
 }
 
 struct AttackData {
